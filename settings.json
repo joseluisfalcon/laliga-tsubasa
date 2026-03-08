@@ -1,6 +1,6 @@
 {
     "input": {
-        "filename": "video_samples/barcelona_bilbao_01.mp4"
+        "filename": "video_samples/barcelona_bilbao_05_360p_15fps.mp4"
     },
     "output": {
         "filename": "output/cartoon_full_video_final.mp4",
