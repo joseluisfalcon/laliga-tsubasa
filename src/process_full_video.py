@@ -4,12 +4,18 @@ import time
 import os
 import sys
 from tqdm import tqdm
+import json
 
 # Add src to path to import cartoonizer
 sys.path.append(os.path.join(os.getcwd(), 'src'))
 from cartoonizer import Cartoonizer
 
-def process_full_video(input_path, output_path):
+def process_full_video(settings):
+    input_path = settings['input']['filename']
+    output_path = settings['output']['filename']
+    replace_faces = settings['output'].get('replace faces', True)
+    animegan_model = settings['output'].get('animegan_model', 'AnimeGANv3_Hayao_36.onnx')
+
     cap = cv2.VideoCapture(input_path)
     if not cap.isOpened():
         print(f"Error opening video: {input_path}")
@@ -29,8 +35,8 @@ def process_full_video(input_path, output_path):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_path, fourcc, fps, (target_w, target_h))
 
-    # Initialize Cartoonizer
-    cartoonizer = Cartoonizer()
+    # Initialize Cartoonizer with specific model
+    cartoonizer = Cartoonizer(animegan_model=animegan_model)
 
     print(f"Processing FULL video: {total_frames} frames from {input_path}...")
     start_global = time.time()
@@ -41,7 +47,7 @@ def process_full_video(input_path, output_path):
             break
 
         # Process frame
-        processed = cartoonizer.process_frame(frame)
+        processed = cartoonizer.process_frame(frame, replace_faces=replace_faces)
         
         # Write to output
         out.write(processed)
@@ -66,10 +72,12 @@ if __name__ == "__main__":
     if not os.path.exists('output'):
         os.makedirs('output')
     
-    input_file = "video_samples/barcelona_bilbao_01.mp4"
-    output_file = "output/cartoon_full_video_final.mp4"
-    
-    if os.path.exists(input_file):
-        process_full_video(input_file, output_file)
+    settings_file = "settings.json"
+    if os.path.exists(settings_file):
+        with open(settings_file, 'r') as f:
+            # Simple manual parsing to avoid issues with trailing commas if present
+            content = f.read().replace(',\n    }', '\n    }').replace(',\n}', '\n}')
+            settings = json.loads(content)
+        process_full_video(settings)
     else:
-        print(f"Input file not found: {input_file}")
+        print(f"Settings file not found: {settings_file}")

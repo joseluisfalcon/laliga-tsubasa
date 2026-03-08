@@ -1,0 +1,10 @@
+{
+    "input": {
+        "filename": "video_samples/barcelona_bilbao_01.mp4"
+    },
+    "output": {
+        "filename": "output/cartoon_full_video_final.mp4",
+        "replace faces": false,
+        "animegan_model": "AnimeGANv3_Hayao_36.onnx"
+    }
+}

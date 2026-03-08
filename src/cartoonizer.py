@@ -3,15 +3,17 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 import warnings
+import os
 
 # Ignore the sm_120 compatibility warning
 warnings.filterwarnings("ignore", category=UserWarning)
 
 from u2net_handler import U2NetHandler
 from toonclip_handler import ToonClipHandler
+from animegan_handler import AnimeGANHandler
 
 class Cartoonizer:
-    def __init__(self, device=None):
+    def __init__(self, device=None, animegan_model=None):
         if device is None:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         else:
@@ -23,49 +25,51 @@ class Cartoonizer:
         self.detector = YOLO('yolo11n.pt').to(self.device)
         self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         
-        # 2. Advanced AI (U-2-Net & ToonClip)
+        # 2. Advanced AI
         try:
             self.u2net = U2NetHandler(device=self.device)
             self.toonclip = ToonClipHandler(device=self.device)
+            
+            # Use specific model if provided
+            model_path = None
+            if animegan_model:
+                model_path = os.path.join('models', 'animeganv3', animegan_model)
+                
+            self.animegan = AnimeGANHandler(model_path=model_path, device=self.device) 
             print("[INFO] Advanced AI models loaded successfully.")
         except Exception as e:
             print(f"[ERROR] Failed to load advanced models: {e}")
             self.u2net = None
             self.toonclip = None
+            self.animegan = None
 
-    def process_frame(self, frame, apply_mask=True):
+    def process_frame(self, frame, replace_faces=True):
         h, w = frame.shape[:2]
         target_w = 1280
         target_h = int(h * (target_w / w))
         img = cv2.resize(frame, (target_w, target_h))
         
-        # A. SALIENCY SEGMENTATION (U-2-Net)
-        # Identify main subjects (players, ball) to keep them vibrant
-        if self.u2net:
-            mask = self.u2net.predict(img)
-            # Refine mask for silhoutte look
-            _, mask_inv = cv2.threshold(mask, 128, 255, cv2.THRESH_BINARY_INV)
-        else:
-            mask = np.ones((target_h, target_w), dtype=np.uint8) * 255
+        # A. SALIENCY SEGMENTATION (U-2-Net) - Optional for future blending
+        # if self.u2net:
+        #     mask = self.u2net.predict(img)
+        #     _, mask_binary = cv2.threshold(mask, 128, 255, cv2.THRESH_BINARY)
 
-        # B. CARTOON STYLE (Global)
-        # 1980s Anime Look: Vibrant, High Saturation, Posterized
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV).astype(np.float32)
-        hsv[:,:,1] *= 1.5 # Saturate
-        hsv = np.clip(hsv, 0, 255).astype(np.uint8)
-        vibrant = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-        
-        # Cel shading effect
-        div = 64
-        posterized = (cv2.bilateralFilter(vibrant, 9, 75, 75) // div) * div + div // 2
-        
-        # Edges
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        edges = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-        cartoon = cv2.bitwise_and(posterized, posterized, mask=edges)
+        # B. ANIME STYLE (AnimeGANv3)
+        if self.animegan:
+            # Full frame style
+            anime_style = self.animegan.predict(img)
+            
+            # Combine Saliency + AnimeGAN for high-end look
+            # We keep the original vibrant subjects but in anime style
+            cartoon = anime_style
+        else:
+            # Fallback to simple cel shading
+            div = 64
+            cartoon = (cv2.bilateralFilter(img, 9, 75, 75) // div) * div + div // 2
 
         # C. HYBRID FACE TRANSFORMATION (ToonClip)
-        if apply_mask and self.toonclip:
+        if replace_faces and self.toonclip:
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             player_results = self.detector.predict(img, conf=0.3, verbose=False)
             for res in player_results:
                 for box in res.boxes:
@@ -91,14 +95,12 @@ class Cartoonizer:
                             # Transform face using ToonClip
                             try:
                                 toon_face = self.toonclip.process_face(face_roi)
+                                # Resize back to fit if needed
+                                toon_face = cv2.resize(toon_face, (fx2-fx1, fy2-fy1))
                                 cartoon[fy1:fy2, fx1:fx2] = toon_face
                             except:
                                 pass # Fallback to global cartoon
 
-        return cartoon
-        
-        return cartoon
-        
         return cartoon
 
 if __name__ == "__main__":
