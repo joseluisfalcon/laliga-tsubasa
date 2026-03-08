@@ -21,10 +21,42 @@ class AnimeGANHandler:
                     selected_path = p
                     break
         
-        if not selected_path:
-            raise FileNotFoundError(f"AnimeGAN model not found in models/animeganv3/. Please download AnimeGANv3_Hayao_36.onnx or AnimeGANv3_Shinkai_37.onnx")
+        # Add TRT DLLs to PATH for Windows
+        if os.name == 'nt':
+            site_packages = os.path.join(os.getcwd(), '.venv', 'Lib', 'site-packages')
+            trt_libs_path = os.path.normpath(os.path.join(site_packages, 'tensorrt_libs'))
+            if os.path.exists(trt_libs_path):
+                print(f"[INFO] Adding TensorRT libs to PATH: {trt_libs_path}")
+                os.environ['PATH'] = trt_libs_path + os.pathsep + os.environ['PATH']
+                if hasattr(os, 'add_dll_directory'):
+                    try:
+                        os.add_dll_directory(trt_libs_path)
+                    except:
+                        pass
             
-        providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'] if device == 'cuda' else ['CPUExecutionProvider']
+        available = ort.get_available_providers()
+        print(f"Available Providers: {available}")
+        
+        providers = []
+        if device == 'cuda':
+            if 'TensorrtExecutionProvider' in available:
+                print("[INFO] Enabling TensorRT Execution Provider")
+                providers.append((
+                    'TensorrtExecutionProvider',
+                    {
+                        'device_id': 0,
+                        'trt_max_partition_iterations': 1000,
+                        'trt_min_subgraph_size': 1,
+                        'trt_max_workspace_size': 2 * 1024 * 1024 * 1024, # 2GB
+                        'trt_fp16_enable': True,
+                        'trt_engine_cache_enable': True,
+                        'trt_engine_cache_path': 'models/animeganv3/cache',
+                    }
+                ))
+            if 'CUDAExecutionProvider' in available:
+                providers.append('CUDAExecutionProvider')
+        
+        providers.append('CPUExecutionProvider')
         
         # Load ONNX model
         self.session = ort.InferenceSession(selected_path, providers=providers)
@@ -32,8 +64,8 @@ class AnimeGANHandler:
         self.output_name = self.session.get_outputs()[0].name
         
         # Get input shape
-        self.input_shape = self.session.get_inputs()[0].shape # [1, H, W, 3] or [1, 3, H, W]
-        print(f"AnimeGANv3 loaded on {device}. Input: {self.input_shape}")
+        self.input_shape = self.session.get_inputs()[0].shape 
+        print(f"AnimeGANv3 loaded. Input Shape: {self.input_shape}")
 
     def predict(self, frame):
         # AnimeGANv3 usually expects RGB normalized to [-1, 1]

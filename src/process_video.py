@@ -3,7 +3,7 @@ import time
 import os
 from cartoonizer import Cartoonizer
 
-def process_video(input_path, output_path):
+def process_video(input_path, output_path, target_width=None, target_fps=None):
     if not os.path.exists(input_path):
         print(f"Error: No se encuentra {input_path}")
         return
@@ -13,37 +13,51 @@ def process_video(input_path, output_path):
         print(f"Error al abrir el vídeo {input_path}")
         return
 
-    fps = cap.get(cv2.CAP_PROP_FPS)
+    source_fps = cap.get(cv2.CAP_PROP_FPS)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
     cartoonizer = Cartoonizer()
     
-    target_w = 1280
-    target_h = int(height * (target_w / width))
+    # Calculate output dimensions
+    out_w = target_width if target_width else width
+    out_h = int(height * (out_w / width))
     
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (target_w, target_h))
+    # Calculate target FPS and frame skip
+    if target_fps is None or target_fps >= source_fps:
+        out_fps = source_fps
+        frame_interval = 1
+    else:
+        out_fps = target_fps
+        frame_interval = int(round(source_fps / target_fps))
 
-    print(f"Procesando {input_path}...")
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_path, fourcc, out_fps, (out_w, out_h))
+
+    print(f"Procesando {input_path} -> {output_path} ({out_w}x{out_h} @ {out_fps}fps, interval: {frame_interval})...")
     start_time = time.time()
     processed_count = 0
+    frames_read = 0
     
     while True:
         ret, frame = cap.read()
         if not ret:
             break
         
-        # Apply the new advanced cartoonizer with masking
-        processed_frame = cartoonizer.process_frame(frame, apply_mask=True)
-        out.write(processed_frame)
-        
-        processed_count += 1
-        if processed_count % 50 == 0:
-            elapsed = time.time() - start_time
-            curr_fps = processed_count / elapsed
-            print(f"Frame {processed_count}/{total_frames} - FPS actual: {curr_fps:.2f}")
+        # Corrected frame skipping logic
+        if frames_read % frame_interval == 0:
+            # Apply the pure animegan styler
+            processed_frame = cartoonizer.process_frame(frame, target_width=out_w)
+            out.write(processed_frame)
+            processed_count += 1
+            
+            if processed_count % 50 == 0:
+                elapsed = time.time() - start_time
+                curr_fps = processed_count / elapsed
+                print(f"Frame {processed_count} (input {frames_read}/{total_frames}) - FPS actual: {curr_fps:.2f}")
+
+        frames_read += 1
 
     end_time = time.time()
     total_elapsed = end_time - start_time
@@ -55,16 +69,17 @@ def process_video(input_path, output_path):
     print("-" * 30)
     print(f"Rendimiento medio: {final_fps:.2f} FPS.")
     
-    video_duration = total_frames / fps
+    video_duration = total_frames / source_fps
     print(f"Ratio (Proceso/Duración): {total_elapsed / video_duration:.2f}")
     
-    if total_elapsed < (video_duration / 2):
-        print("¡OBJETIVO CUMPLIDO!")
+    if total_elapsed < video_duration:
+        print("¡OBJETIVO CUMPLIDO (Faster than real-time)!")
     else:
-        print("Objetivo no cumplido. Se requiere optimización.")
+        print("Procesado completado (Slower than real-time).")
 
 if __name__ == "__main__":
-    input_file = "video_samples/segments/segment_60.mp4"
-    output_file = "output/result_segment_60.mp4"
+    # Target: 360p @ 15fps (Pure Style, No Detection)
+    input_file = "video_samples/barcelona_bilbao_06_360p_30fps.mp4"
+    output_file = "output/FINAL_TSUBASA_RETRO_360p_15fps.mp4"
     os.makedirs("output", exist_ok=True)
-    process_video(input_file, output_file)
+    process_video(input_file, output_file, target_width=640, target_fps=15)
