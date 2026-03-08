@@ -10,13 +10,18 @@
         }
     },
     "live_stream": {
-        "source": 0,
+        "source": "http://your-iptv-source-url:8080/...",
         "target_width": 640,
-        "target_fps": 15
+        "target_fps": 15,
+        "live_url": "rtmp://a.rtmp.youtube.com/live2",
+        "live_key": "your-youtube-stream-key"
     }
+    // For Twitch:
     // "live_stream": {
-    //     "source": "http://73663.solanaflix.com:8080/TV-69033726/980349427961/109341",
+    //     "source": "http://...",
     //     "target_width": 640,
-    //     "target_fps": 15
+    //     "target_fps": 15,
+    //     "live_url": "rtmp://live.twitch.tv/app/",
+    //     "live_key": "your-twitch-stream-key"
     // }
 }

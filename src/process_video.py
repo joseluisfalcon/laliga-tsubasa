@@ -1,6 +1,8 @@
 import cv2
 import time
 import os
+import json
+import re
 from cartoonizer import Cartoonizer
 
 def process_video(input_path, output_path, target_width=None, target_fps=None):
@@ -77,9 +79,29 @@ def process_video(input_path, output_path, target_width=None, target_fps=None):
     else:
         print("Procesado completado (Slower than real-time).")
 
+def load_settings(path="settings.json"):
+    if not os.path.exists(path):
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        content = f.read()
+        # Remove // comments ONLY at start of lines (handling potential CRLF)
+        content = re.sub(r'^\s*//.*', '', content, flags=re.MULTILINE)
+        # Remove trailing commas before closing braces/brackets
+        content = re.sub(r',\s*([\]}])', r'\1', content)
+        return json.loads(content, strict=False)
+
 if __name__ == "__main__":
-    # Target: 360p @ 15fps (Pure Style + User's Custom Retro Filter v10)
-    input_file = "video_samples/barcelona_bilbao_06_360p_30fps.mp4"
-    output_file = "output/FINAL_TSUBASA_RETRO_360p_15fps_v10.mp4"
+    settings = load_settings()
+    
+    if settings and "tests_codification" in settings:
+        s = settings["tests_codification"]
+        input_file = s["input"]["filename"]
+        output_file = s["output"]["filename"]
+        # Note: we can also extract animegan_model if needed
+    else:
+        # Fallback to defaults if settings.json is missing or invalid
+        input_file = "video_samples/barcelona_bilbao_06_360p_30fps.mp4"
+        output_file = "output/FINAL_TSUBASA_RETRO_360p_15fps_v10.mp4"
+
     os.makedirs("output", exist_ok=True)
     process_video(input_file, output_file, target_width=640, target_fps=15)
