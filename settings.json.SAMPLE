@@ -1,0 +1,22 @@
+{
+    "tests_codification": {
+        "input": {
+            "filename": "video_samples/barcelona_bilbao_06_360p_30fps.mp4"
+        },
+        "output": {
+            "filename": "output/cartoon_full_video_final.mp4",
+            "replace faces": false,
+            "animegan_model": "AnimeGANv3_Hayao_36.onnx"
+        }
+    },
+    "live_stream": {
+        "source": 0,
+        "target_width": 640,
+        "target_fps": 15
+    }
+    // "live_stream": {
+    //     "source": "http://73663.solanaflix.com:8080/TV-69033726/980349427961/109341",
+    //     "target_width": 640,
+    //     "target_fps": 15
+    // }
+}
