@@ -1,0 +1,16 @@
+--index-url https://download.pytorch.org/whl/cu128
+torch==2.7.0
+torchvision==0.22.0
+torchaudio==2.7.0
+opencv-python
+ffmpeg-python
+onnxruntime-gpu==1.22.0
+onnx==1.17.0
+mediapipe
+numpy==1.26.4
+Pillow
+tqdm
+accelerate
+ultralytics
+sahi
+lapx

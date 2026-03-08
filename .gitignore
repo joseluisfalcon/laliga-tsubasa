@@ -1,0 +1,19 @@
+.venv/
+# Environment
+.venv/
+__pycache__/
+*.pyc
+
+# Large AI Models
+models/
+*.pt
+*.pth
+*.onnx
+
+# Video Samples & Output
+video_samples/
+output/
+
+# OS files
+.DS_Store
+Thumbs.db
