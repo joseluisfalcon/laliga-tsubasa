@@ -78,8 +78,8 @@ def process_video(input_path, output_path, target_width=None, target_fps=None):
         print("Procesado completado (Slower than real-time).")
 
 if __name__ == "__main__":
-    # Target: 360p @ 15fps (Pure Style, No Detection)
+    # Target: 360p @ 15fps (Pure Style + User's Custom Retro Filter v10)
     input_file = "video_samples/barcelona_bilbao_06_360p_30fps.mp4"
-    output_file = "output/FINAL_TSUBASA_RETRO_360p_15fps.mp4"
+    output_file = "output/FINAL_TSUBASA_RETRO_360p_15fps_v10.mp4"
     os.makedirs("output", exist_ok=True)
     process_video(input_file, output_file, target_width=640, target_fps=15)
