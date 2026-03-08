@@ -55,4 +55,9 @@ This project draws inspiration and logic from the following research and reposit
 4. Find your stylized output in the `output/` directory.
 
 ---
+
+## License
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
 *Created as part of the LaLiga Tsubasa Evolution Project - 2026*
