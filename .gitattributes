@@ -1,1 +1,5 @@
+models/animeganv3 filter=lfs diff=lfs merge=lfs -text
+models/toonclip filter=lfs diff=lfs merge=lfs -text
+models/u2net filter=lfs diff=lfs merge=lfs -text
+models/yolo filter=lfs diff=lfs merge=lfs -text
 models/**/* filter=lfs diff=lfs merge=lfs -text
