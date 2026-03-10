@@ -4,12 +4,6 @@
 __pycache__/
 *.pyc
 
-# Large AI Models
-models/
-*.pt
-*.pth
-*.onnx
-
 # Video Samples & Output
 video_samples/
 output/
@@ -19,3 +13,6 @@ output/
 Thumbs.db
 settings.json
 logs/
+
+# # Large AI Models
+# models/
